@@ -7,51 +7,50 @@ let errors: string[] = [];
 const App: React.FC = () => {
   const [csvInput, setCsvInput] = useState<string>('');
   const [tableData, setTableData] = useState<TableData>([]);
+  const [hasHeader, setHasHeader] = useState<boolean>(false);
 
-  const parseCSV = (text: string): TableData => {
+  const parseCSV$ = (text: string): TableData => {
+    const errors: string[] = [];
     const rows: TableData = [];
-    const lines = text.split('\n');
     const delimiters = [',', ';'];
+    const stack = Array.from(text);
 
-    lines.forEach((line, lineIdx) => {
-      const cells: string[] = [];
-      let insideQuotes = false;
-      let currentCell = '';
-      let quoteCount = 0;
-      for (let i = 0; i < line.length; i++) {
-        const char = line[i];
+    let cell = '';
+    let row: string[] = [];
+    let quoteCount = 0;
 
-        if (char === '"' && insideQuotes && line[i + 1] === '"') {
-          quoteCount++;
-          currentCell += '"'; // Add escaped quote
-          i++; // Skip the next quote
-        } else if (char === '"') {
-          quoteCount++;
-          insideQuotes = !insideQuotes;
-        } else if (delimiters.includes(char) && !insideQuotes) {
-          cells.push(currentCell);
-          currentCell = '';
-        } else {
-          currentCell += char;
-        }
-      }
+    while (stack.length) {
+      const char = stack.shift() as string; /* while loop condition ensures truthy value */
 
-      cells.push(currentCell);
-      rows.push(cells);
-      if (quoteCount > 0 && quoteCount / 2 !== cells.length) {
+      if (char === '"') {
+        quoteCount++;
+      } else if (char === '\n' && (quoteCount === 0 || quoteCount === 2)) {
+        row.push(cell);
+        rows.push(row);
+        row = [];
+        cell = '';
         quoteCount = 0;
-        errors.push(`no quote match in line ${lineIdx}`);
+      } else if (delimiters.includes(char) && (quoteCount === 0 || quoteCount === 2)) {
+        row.push(cell);
+        cell = '';
+        quoteCount = 0;
+      } else {
+        cell += char;
       }
-    });
+
+      if (stack.length === 0) {
+        row.push(cell);
+        rows.push(row);
+      }
+    }
 
     return rows;
   };
-
   const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const input = event.target.value;
     setCsvInput(input);
     errors = [];
-    const parsedData = parseCSV(input);
+    const parsedData = parseCSV$(input);
     setTableData(parsedData);
     console.log(parsedData);
     errors.length && console.warn(errors);
@@ -60,17 +59,34 @@ const App: React.FC = () => {
   return (
     <div className="App">
       <h1>CSV Parser</h1>
+      <label>
+        <input type="checkbox" checked={hasHeader} onChange={() => setHasHeader(!hasHeader)} />
+        Header Present
+      </label>
       <textarea value={csvInput} onChange={handleChange} placeholder="Enter CSV data here" rows={10} cols={50} />
-      <Table data={tableData} />
+      <Table data={tableData} hasHeader={hasHeader} />
     </div>
   );
 };
 
-const Table: React.FC<{ data: TableData }> = ({ data }) => {
+type TableProps = { data: TableData; hasHeader: boolean };
+const Table: React.FC<TableProps> = ({ data, hasHeader }) => {
+  if (!data.length) {
+    return null;
+  }
   return (
     <table border={1}>
+      <thead>
+        {hasHeader && (
+          <tr>
+            {data[0].map((cell, cellIndex) => (
+              <th key={cellIndex}>{cell}</th>
+            ))}
+          </tr>
+        )}
+      </thead>
       <tbody>
-        {data.map((row, rowIndex) => (
+        {data.slice(Number(hasHeader)).map((row, rowIndex) => (
           <tr key={rowIndex}>
             {row.map((cell, cellIndex) => (
               <td key={cellIndex}>{cell}</td>
@@ -81,5 +97,4 @@ const Table: React.FC<{ data: TableData }> = ({ data }) => {
     </table>
   );
 };
-
 export default App;
