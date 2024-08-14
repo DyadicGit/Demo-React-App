@@ -9,7 +9,7 @@ const App: React.FC = () => {
   const [tableData, setTableData] = useState<TableData>([]);
   const [hasHeader, setHasHeader] = useState<boolean>(false);
 
-  const parseCSV$ = (text: string): TableData => {
+  const parseCSV = (text: string): TableData => {
     const errors: string[] = [];
     const rows: TableData = [];
     const delimiters = [',', ';'];
@@ -46,11 +46,13 @@ const App: React.FC = () => {
 
     return rows;
   };
+  const trimEmptyRows = (tableData: TableData) => tableData.filter((row) => JSON.stringify(row) !== JSON.stringify(['']));
   const handleTextInput = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const input = event.target.value;
     setCsvInput(input);
     errors = [];
-    const parsedData = parseCSV$(input);
+    const parsedCSV = parseCSV(input);
+    const parsedData = trimEmptyRows(parsedCSV);
     setTableData(parsedData);
     console.log(parsedData);
     errors.length && console.warn(errors);
