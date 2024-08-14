@@ -46,7 +46,7 @@ const App: React.FC = () => {
 
     return rows;
   };
-  const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleTextInput = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const input = event.target.value;
     setCsvInput(input);
     errors = [];
@@ -63,7 +63,9 @@ const App: React.FC = () => {
         <input type="checkbox" checked={hasHeader} onChange={() => setHasHeader(!hasHeader)} />
         Header Present
       </label>
-      <textarea value={csvInput} onChange={handleChange} placeholder="Enter CSV data here" rows={10} cols={50} />
+      <br />
+      <textarea value={csvInput} onChange={handleTextInput} placeholder="Enter CSV data here" rows={10} cols={50} />
+      <br />
       <Table data={tableData} hasHeader={hasHeader} />
     </div>
   );
