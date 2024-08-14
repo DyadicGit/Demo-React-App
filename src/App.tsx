@@ -10,10 +10,9 @@ const App: React.FC = () => {
   const [hasHeader, setHasHeader] = useState<boolean>(false);
 
   const parseCSV = (text: string): TableData => {
-    const errors: string[] = [];
     const rows: TableData = [];
     const delimiters = [',', ';'];
-    const stack = Array.from(text);
+    const stack = Array.from(text.trim());
 
     let cell = '';
     let row: string[] = [];
@@ -21,8 +20,10 @@ const App: React.FC = () => {
 
     while (stack.length) {
       const char = stack.shift() as string; /* while loop condition ensures truthy value */
-
-      if (char === '"') {
+      if (char === '"' && quoteCount === 2) {
+        cell += char;
+        quoteCount = 1;
+      } else if (char === '"') {
         quoteCount++;
       } else if (char === '\n' && (quoteCount === 0 || quoteCount === 2)) {
         row.push(cell);
@@ -46,20 +47,18 @@ const App: React.FC = () => {
 
     return rows;
   };
-  const trimEmptyRows = (tableData: TableData) => tableData.filter((row) => JSON.stringify(row) !== JSON.stringify(['']));
   const handleTextInput = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const input = event.target.value;
     setCsvInput(input);
     errors = [];
     const parsedCSV = parseCSV(input);
-    const parsedData = trimEmptyRows(parsedCSV);
-    setTableData(parsedData);
-    console.log(parsedData);
+    setTableData(parsedCSV);
+    console.log(parsedCSV);
     errors.length && console.warn(errors);
   };
 
   return (
-    <div className="App">
+    <main className="App">
       <h1>CSV Parser</h1>
       <label>
         <input type="checkbox" checked={hasHeader} onChange={() => setHasHeader(!hasHeader)} />
@@ -69,7 +68,7 @@ const App: React.FC = () => {
       <textarea value={csvInput} onChange={handleTextInput} placeholder="Enter CSV data here" rows={10} cols={50} />
       <br />
       <Table data={tableData} hasHeader={hasHeader} />
-    </div>
+    </main>
   );
 };
 
